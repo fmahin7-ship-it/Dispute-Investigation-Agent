@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { InvestigateProgressEvent } from "@/lib/api";
 import { formatLabel } from "@/lib/formatLabel";
 
@@ -294,21 +295,35 @@ type Props = {
 
 export function InvestigationProgressModal({ state, onClose }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!state.open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [state.open]);
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el || !state.open) return;
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [state.checklist.length, state.phaseLabel, state.phase]);
+  }, [state.checklist.length, state.phaseLabel, state.phase, state.open]);
 
-  if (!state.open) return null;
+  if (!state.open || !mounted) return null;
 
   const canClose =
     state.phase === "complete" || state.phase === "failed" || !!state.error;
 
-  return (
+  const modal = (
     <div
-      className="investigate-modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[2px]"
+      className="investigate-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="investigate-progress-title"
@@ -419,11 +434,13 @@ export function InvestigationProgressModal({ state, onClose }: Props) {
             </button>
           ) : (
             <p className="text-center text-xs text-slate-500">
-              Watching each tool step — scroll if the list grows
+              Watching each tool step — checklist scrolls inside this panel
             </p>
           )}
         </div>
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

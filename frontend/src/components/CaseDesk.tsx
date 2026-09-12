@@ -213,8 +213,15 @@ export function CaseDesk({ caseId }: Props) {
     return <p className="text-sm text-slate-500">Loading case…</p>;
   }
 
+  const showResults = Boolean(finding) && !progress.open;
+
+  function closeProgressModal() {
+    setProgress((p) => ({ ...p, open: false }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   return (
-    <div className="animate-fade-up space-y-6">
+    <div className="space-y-6">
       <Link href="/" className="text-sm font-semibold text-accent">
         ← Back to cases
       </Link>
@@ -265,18 +272,18 @@ export function CaseDesk({ caseId }: Props) {
       </section>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <EvidencePanel finding={finding} />
-        <FindingPanel finding={finding} />
+        <EvidencePanel finding={showResults ? finding : null} />
+        <FindingPanel finding={showResults ? finding : null} />
       </div>
 
-      {finding && "ops" in caseRow && caseRow.ops ? (
+      {showResults && "ops" in caseRow && caseRow.ops ? (
         <DeliveryOpsPanel
           tracking={caseRow.ops.tracking}
           delivery={caseRow.ops.delivery_evidence}
         />
       ) : null}
 
-      {finding && investigationId ? (
+      {showResults && investigationId ? (
         <>
           <BriefMePanel
             disabled={!investigationId || !finding}
@@ -303,7 +310,7 @@ export function CaseDesk({ caseId }: Props) {
 
       <InvestigationProgressModal
         state={progress}
-        onClose={() => setProgress((p) => ({ ...p, open: false }))}
+        onClose={closeProgressModal}
       />
     </div>
   );
