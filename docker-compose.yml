@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: edi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: edi
+      POSTGRES_PASSWORD: edi
+      POSTGRES_DB: edi
+    ports:
+      - "5432:5432"
+    volumes:
+      - edi_pgdata:/var/lib/postgresql/data
+      - ./backend/data/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U edi -d edi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  edi_pgdata:
