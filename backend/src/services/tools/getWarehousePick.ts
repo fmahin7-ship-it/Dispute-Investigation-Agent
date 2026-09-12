@@ -1,8 +1,6 @@
-/** Person B — wrong item case */
+import { findWarehousePickByOrderId } from "../../repositories/warehousePickRepository.js";
+
+/** Ordered vs picked SKU/name — critical for 1112 wrong-item. */
 export async function getWarehousePick(orderId: string) {
-  return {
-    order_id: orderId,
-    stub: true,
-    message: "TODO Person B: warehouse pick/pack",
-  };
+  return findWarehousePickByOrderId(orderId);
 }

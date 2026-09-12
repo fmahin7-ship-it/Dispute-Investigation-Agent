@@ -1,8 +1,6 @@
-/** Person B — implement against seed DB. Return slim facts only. */
+import { findOrderById } from "../../repositories/orderRepository.js";
+
+/** Slim order facts from Postgres seed. */
 export async function getOrder(orderId: string) {
-  return {
-    order_id: orderId,
-    stub: true,
-    message: "TODO Person B: load order from seed",
-  };
+  return findOrderById(orderId);
 }

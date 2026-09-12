@@ -1,9 +1,6 @@
-/** Person B — duplicate charge case */
+import { listPaymentsByOrderId } from "../../repositories/paymentRepository.js";
+
+/** All charges for an order — critical for 1087 duplicate capture. */
 export async function getPayments(orderId: string) {
-  return {
-    order_id: orderId,
-    payments: [],
-    stub: true,
-    message: "TODO Person B: payment rows",
-  };
+  return listPaymentsByOrderId(orderId);
 }

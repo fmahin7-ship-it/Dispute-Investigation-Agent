@@ -1,8 +1,6 @@
-/** Person B */
+import { findShipmentByOrderId } from "../../repositories/shipmentRepository.js";
+
+/** Slim tracking + GPS proximity from shipments. */
 export async function getTracking(orderId: string) {
-  return {
-    order_id: orderId,
-    stub: true,
-    message: "TODO Person B: tracking + GPS proximity",
-  };
+  return findShipmentByOrderId(orderId);
 }
