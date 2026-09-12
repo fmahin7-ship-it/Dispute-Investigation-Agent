@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { InvestigateProgressEvent } from "@/lib/api";
+import { formatLabel } from "@/lib/formatLabel";
 
 export type StepStatus = "pending" | "active" | "done" | "error";
 
@@ -209,7 +210,7 @@ export function reduceProgress(
         ...prev,
         open: true,
         phase: "complete",
-        phaseLabel: `Finding ready → ${event.recommendation}`,
+        phaseLabel: `Finding ready → ${formatLabel(event.recommendation)}`,
         recommendation: event.recommendation,
         phases: setPhaseStatus(prev.phases, "complete", "done"),
         checklist: [
@@ -218,7 +219,7 @@ export function reduceProgress(
           ),
           {
             id: "finding",
-            label: `Recommendation: ${event.recommendation}`,
+            label: `Recommendation: ${formatLabel(event.recommendation)}`,
             status: "done",
             detail: (event.tools_used ?? []).join(", ") || undefined,
           },
@@ -312,21 +313,19 @@ export function InvestigationProgressModal({ state, onClose }: Props) {
       aria-modal="true"
       aria-labelledby="investigate-progress-title"
     >
-      <div className="investigate-modal-panel flex max-h-[min(85vh,640px)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-        <div className="shrink-0 border-b border-slate-100 px-5 py-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Investigation in progress
-          </p>
+      <div className="investigate-modal-panel flex max-h-[min(85vh,640px)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-desk">
+        <div className="shrink-0 border-b border-line px-5 py-4">
+          <p className="desk-kicker">Investigation in progress</p>
           <h2
             id="investigate-progress-title"
-            className="investigate-phase-title mt-1 text-lg font-semibold text-ink"
+            className="investigate-phase-title mt-1 font-display text-lg font-semibold text-ink"
             key={state.phaseLabel}
           >
             {state.phaseLabel}
           </h2>
           {state.recommendation ? (
             <p className="mt-1 text-sm text-teal-800">
-              Result: <strong>{state.recommendation}</strong>
+              Result: <strong>{formatLabel(state.recommendation)}</strong>
             </p>
           ) : null}
           {state.error ? (
@@ -414,7 +413,7 @@ export function InvestigationProgressModal({ state, onClose }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
+              className="w-full rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
             >
               {state.error ? "Close" : "View finding"}
             </button>

@@ -10,6 +10,7 @@ import {
   type BriefingResponse,
   type InvestigateProgressEvent,
 } from "@/lib/api";
+import { formatLabel } from "@/lib/formatLabel";
 import type { CaseDetail, CaseSummary } from "@/schemas/cases";
 import type { Finding } from "@/schemas/finding";
 import { EvidencePanel } from "@/components/EvidencePanel";
@@ -128,7 +129,7 @@ export function CaseDesk({ caseId }: Props) {
         ...prev,
         open: true,
         phase: "complete",
-        phaseLabel: `Finding ready → ${result.finding.recommendation}`,
+        phaseLabel: `Finding ready → ${formatLabel(result.finding.recommendation)}`,
         recommendation: result.finding.recommendation,
         phases: prev.phases.map((p) => ({ ...p, status: "done" as const })),
         checklist: prev.checklist.map((c) =>
@@ -137,7 +138,7 @@ export function CaseDesk({ caseId }: Props) {
       }));
       setAudit((a) => [
         ...a,
-        `${new Date().toLocaleTimeString()} Investigation completed → ${result.finding.recommendation}`,
+        `${new Date().toLocaleTimeString()} Investigation completed → ${formatLabel(result.finding.recommendation)}`,
       ]);
     } catch (e) {
       await waitForProgressQueue();
@@ -188,7 +189,7 @@ export function CaseDesk({ caseId }: Props) {
       setHumanDecision(decision);
       setAudit((a) => [
         ...a,
-        `${new Date().toLocaleTimeString()} Human decision → ${decision} (Manager)`,
+        `${new Date().toLocaleTimeString()} Human decision → ${formatLabel(decision)} (Manager)`,
       ]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Decision failed");
@@ -213,39 +214,52 @@ export function CaseDesk({ caseId }: Props) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="animate-fade-up space-y-6">
       <Link href="/" className="text-sm font-semibold text-accent">
         ← Back to cases
       </Link>
 
-      <section className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+      <section className="desk-panel">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+          <div className="min-w-0 max-w-2xl">
+            <p className="desk-meta">
               Case #{caseRow.id}
               {caseRow.order_id ? ` · ${caseRow.order_id}` : ""}
             </p>
-            <h2 className="text-xl font-semibold text-ink">{caseRow.title}</h2>
-            <p className="mt-2 text-sm italic text-slate-600">
+            <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-ink">
+              {caseRow.title}
+            </h2>
+            <p className="mt-3 text-sm italic leading-relaxed text-slate-600">
               “{caseRow.customer_message}”
+            </p>
+            <p className="mt-3">
+              <span className="claim-chip">
+                {formatLabel(caseRow.claim_type)}
+              </span>
+              <span className="ml-2 text-sm font-semibold tabular-nums text-accent">
+                A${caseRow.amount_aud.toLocaleString()}
+              </span>
             </p>
           </div>
           <button
             type="button"
             disabled={busy || progress.open}
             onClick={onInvestigate}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            className="btn-primary"
           >
             {busy ? "Investigating…" : "Investigate"}
           </button>
         </div>
         {error && !progress.open ? (
-          <p className="mt-3 text-sm text-red-600">{error}</p>
+          <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+            {error}
+          </p>
         ) : null}
         {humanDecision ? (
-          <p className="mt-3 rounded-lg bg-teal-50 px-3 py-2 text-sm text-teal-900">
-            Recorded decision: <strong>{humanDecision}</strong> (AI recommended{" "}
-            {finding?.recommendation ?? "—"})
+          <p className="mt-4 rounded-xl border border-teal-300/60 bg-accent-soft/80 px-3 py-2.5 text-sm text-teal-950">
+            Recorded decision:{" "}
+            <strong>{formatLabel(humanDecision)}</strong> (AI recommended{" "}
+            {formatLabel(finding?.recommendation)})
           </p>
         ) : null}
       </section>

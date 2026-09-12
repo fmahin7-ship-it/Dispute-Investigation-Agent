@@ -37,21 +37,24 @@ export default function PolicyDetailPage() {
   }, [docName]);
 
   return (
-    <main className="space-y-4">
+    <main className="animate-fade-up space-y-4">
       <Link href="/policies" className="text-sm font-semibold text-accent">
         ← All policies
       </Link>
-      {loading ? (
-        <p className="text-sm text-slate-500">Loading…</p>
-      ) : null}
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {loading ? <p className="text-sm text-slate-500">Loading…</p> : null}
+      {error ? <p className="text-sm text-rose-700">{error}</p> : null}
       {!loading && !error ? (
-        <article className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm">
-          <h2 className="text-xl font-semibold text-ink">{title}</h2>
-          <p className="mt-1 text-xs text-slate-400">{docName}</p>
-          <pre className="mt-6 max-w-none whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-slate-700">
-            {content}
-          </pre>
+        <article className="desk-panel">
+          <p className="desk-kicker">Policy document</p>
+          <h2 className="mt-2 font-display text-2xl font-semibold text-ink">
+            {title}
+          </h2>
+          <p className="mt-1 font-mono text-xs text-slate-400">{docName}</p>
+          <div className="mt-6 border-t border-line pt-6">
+            <pre className="max-w-none whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-slate-700">
+              {content}
+            </pre>
+          </div>
         </article>
       ) : null}
     </main>

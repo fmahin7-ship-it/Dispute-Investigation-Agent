@@ -3,29 +3,50 @@ type Props = {
   onDecide: (decision: string) => void;
 };
 
-export function HitlActions({ disabled, onDecide }: Props) {
-  const decisions = ["APPROVE", "REJECT", "ESCALATE", "REQUEST_INFO"] as const;
+const decisions = [
+  {
+    value: "APPROVE",
+    label: "Approve",
+    className:
+      "border-emerald-700/30 bg-emerald-50 text-emerald-950 hover:bg-emerald-100",
+  },
+  {
+    value: "REJECT",
+    label: "Reject",
+    className: "border-rose-700/30 bg-rose-50 text-rose-950 hover:bg-rose-100",
+  },
+  {
+    value: "ESCALATE",
+    label: "Escalate",
+    className:
+      "border-orange-700/30 bg-orange-50 text-orange-950 hover:bg-orange-100",
+  },
+  {
+    value: "REQUEST_INFO",
+    label: "Request info",
+    className: "border-sky-700/30 bg-sky-50 text-sky-950 hover:bg-sky-100",
+  },
+] as const;
 
+export function HitlActions({ disabled, onDecide }: Props) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white/90 p-4 shadow-sm">
+    <section className="desk-panel">
       <div>
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Human review
-        </h3>
-        <p className="text-xs text-slate-500">
-          Role: Manager — AI recommends; you authorize the next action.
+        <h3 className="desk-section-label">Human review</h3>
+        <p className="mt-1 text-sm text-slate-600">
+          Manager authorizes the next action. AI recommendation stays on record.
         </p>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         {decisions.map((d) => (
           <button
-            key={d}
+            key={d.value}
             type="button"
             disabled={disabled}
-            onClick={() => onDecide(d)}
-            className="rounded-lg bg-ink px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+            onClick={() => onDecide(d.value)}
+            className={`rounded-xl border px-3 py-3 text-sm font-semibold normal-case tracking-normal transition disabled:opacity-45 ${d.className}`}
           >
-            {d}
+            {d.label}
           </button>
         ))}
       </div>

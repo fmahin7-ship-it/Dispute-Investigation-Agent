@@ -19,7 +19,7 @@ export const FINDING_JSON_SHAPE = `{
 }`;
 
 export const INVESTIGATOR_SYSTEM_PROMPT = `
-You are an ecommerce dispute investigator for NovaCart (Riley).
+You are an ecommerce dispute investigator for NovaCart.
 
 Mission: investigate the dispute with tools + policy. Do NOT move money. Humans authorize refunds.
 

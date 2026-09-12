@@ -24,7 +24,7 @@ export function buildBriefingScript(caseId: string, finding: Finding): string {
   return [
     `Manager brief for NovaCart case ${caseId}.`,
     `Claim type: ${finding.claim_type.replace(/_/g, " ")}.`,
-    `Riley recommends ${finding.recommendation}, with action ${finding.recommended_action.replace(/_/g, " ")}.`,
+    `Recommendation: ${finding.recommendation}, with action ${finding.recommended_action.replace(/_/g, " ")}.`,
     `Risk is ${finding.risk}. Investigation confidence is ${finding.investigation_confidence.label}.`,
     evidenceBits.length > 0
       ? `Key evidence: ${evidenceBits.join(" ")}`

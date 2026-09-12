@@ -1,5 +1,7 @@
 "use client";
 
+import { formatLabel } from "@/lib/formatLabel";
+
 type TrackingOps = {
   found: boolean;
   order_id: string;
@@ -52,8 +54,8 @@ export function DeliveryOpsPanel({ tracking, delivery }: Props) {
           : "Far from registered point";
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white/90 p-4 shadow-sm">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+    <section className="desk-panel">
+      <h3 className="desk-section-label">
         Carrier evidence · GPS & photo
       </h3>
 
@@ -79,11 +81,11 @@ export function DeliveryOpsPanel({ tracking, delivery }: Props) {
               ) : null}
               {tracking?.delivery_method ? (
                 <p className="text-slate-600">
-                  Method: {tracking.delivery_method.replace(/_/g, " ")}
+                  Method: {formatLabel(tracking.delivery_method)}
                 </p>
               ) : null}
               {distance != null ? (
-                <div className="rounded-lg border border-slate-100 bg-panel px-3 py-2">
+                <div className="rounded-xl border border-slate-300/60 bg-white/35 px-3 py-2">
                   <p className="font-semibold text-ink">
                     GPS proximity: {Math.round(distance)} m
                   </p>

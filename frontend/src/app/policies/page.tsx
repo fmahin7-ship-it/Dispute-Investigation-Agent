@@ -35,28 +35,42 @@ export default function PoliciesPage() {
   }, []);
 
   return (
-    <main>
-      <h2 className="mb-2 text-lg font-semibold text-ink">
-        NovaCart policy library
-      </h2>
-      <p className="mb-6 max-w-2xl text-sm text-slate-600">
-        These documents power policy retrieval during investigation. The agent
-        cites relevant sections in each Finding.
-      </p>
+    <main className="animate-fade-up" style={{ animationDelay: "80ms" }}>
+      <div className="mb-6">
+        <h2 className="font-display text-2xl font-semibold text-ink">
+          Policy library
+        </h2>
+        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
+          These documents power retrieval during investigation. Findings cite
+          the sections that shaped the recommendation.
+        </p>
+      </div>
       {loading ? (
         <p className="text-sm text-slate-500">Loading policies…</p>
       ) : null}
-      {error ? <p className="mb-4 text-sm text-red-600">{error}</p> : null}
-      <ul className="space-y-3">
-        {policies.map((p) => (
-          <li key={p.doc}>
+      {error ? (
+        <p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          {error}
+        </p>
+      ) : null}
+      <ul className="grid gap-3 md:grid-cols-2">
+        {policies.map((p, i) => (
+          <li
+            key={p.doc}
+            className="animate-fade-up"
+            style={{ animationDelay: `${100 + i * 50}ms` }}
+          >
             <Link
               href={`/policies/${encodeURIComponent(p.doc)}`}
-              className="block rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm transition hover:border-accent"
+              className="desk-panel group block h-full !p-4 transition hover:-translate-y-0.5 hover:border-accent/50"
             >
-              <p className="font-medium text-ink">{p.title}</p>
-              <p className="mt-1 text-xs text-slate-400">{p.doc}</p>
-              <p className="mt-2 text-sm text-slate-600">{p.summary}</p>
+              <p className="font-display text-lg font-semibold text-ink group-hover:text-accent">
+                {p.title}
+              </p>
+              <p className="mt-1 font-mono text-[11px] text-slate-400">{p.doc}</p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                {p.summary}
+              </p>
             </Link>
           </li>
         ))}
