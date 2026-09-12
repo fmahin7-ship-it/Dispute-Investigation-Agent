@@ -1,12 +1,17 @@
 import OpenAI from "openai";
 import { env } from "../config/env.js";
+import { AppError } from "../middleware/errorHandler.js";
 
-/** Person A — OpenAI-compatible client (same idea as UddoktaHut openai SDK). */
+/** Person A — OpenAI-compatible client (native tool calling; no LangGraph). */
 let client: OpenAI | null = null;
 
 export function getLlmClient() {
   if (!env.openaiApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
+    throw new AppError(
+      500,
+      "OPENAI_API_KEY is not configured",
+      "MISSING_OPENAI_KEY"
+    );
   }
   if (!client) {
     client = new OpenAI({ apiKey: env.openaiApiKey });

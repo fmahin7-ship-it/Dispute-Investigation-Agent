@@ -1,13 +1,15 @@
 /**
  * Person A — register OpenAI-compatible tool definitions here.
  * Person B implements the handlers in services/tools/*.
+ * Person C implements search_policy via the same executeTool gateway.
  */
 export const TOOL_DEFINITIONS = [
   {
     type: "function" as const,
     function: {
       name: "get_order",
-      description: "Get order facts for a case/order id",
+      description:
+        "Get slim order facts (status, amount, SKU, customer_id) for an order_id",
       parameters: {
         type: "object",
         properties: { order_id: { type: "string" } },
@@ -19,7 +21,8 @@ export const TOOL_DEFINITIONS = [
     type: "function" as const,
     function: {
       name: "get_tracking",
-      description: "Get shipment tracking and GPS proximity facts",
+      description:
+        "Get shipment tracking status, delivery timestamp, and GPS proximity (distance_meters) for an order",
       parameters: {
         type: "object",
         properties: { order_id: { type: "string" } },
@@ -44,7 +47,8 @@ export const TOOL_DEFINITIONS = [
     type: "function" as const,
     function: {
       name: "get_customer_history",
-      description: "Get prior dispute/refund summary for a customer",
+      description:
+        "Get prior dispute/refund summary for a customer (counts + short prior list)",
       parameters: {
         type: "object",
         properties: { customer_id: { type: "string" } },
@@ -56,7 +60,8 @@ export const TOOL_DEFINITIONS = [
     type: "function" as const,
     function: {
       name: "get_payments",
-      description: "Get payment transactions for an order (duplicate-charge cases)",
+      description:
+        "Get payment transactions for an order (use for duplicate-charge cases)",
       parameters: {
         type: "object",
         properties: { order_id: { type: "string" } },
@@ -68,7 +73,8 @@ export const TOOL_DEFINITIONS = [
     type: "function" as const,
     function: {
       name: "get_warehouse_pick",
-      description: "Get warehouse pick/pack log (wrong-item cases)",
+      description:
+        "Get warehouse pick/pack log including sku_match (use for wrong-item cases)",
       parameters: {
         type: "object",
         properties: { order_id: { type: "string" } },
@@ -81,7 +87,7 @@ export const TOOL_DEFINITIONS = [
     function: {
       name: "search_policy",
       description:
-        "Search company refund/delivery/high-value policies. Call again with a refined query if needed.",
+        "Search NovaCart refund/delivery/high-value/fraud policies. Call again with a refined query if the first hit is too generic.",
       parameters: {
         type: "object",
         properties: { query: { type: "string" } },
