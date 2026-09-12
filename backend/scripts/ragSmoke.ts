@@ -1,5 +1,5 @@
 /**
- * Person C smoke — handoff-gate queries against search_policy.
+ * Smoke: handoff-gate queries against search_policy.
  *
  *   cd backend && npm run rag:smoke
  */

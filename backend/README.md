@@ -14,13 +14,13 @@ npm run dev
 Health: `GET http://localhost:4000/health`  
 Investigate: `POST http://localhost:4000/api/investigations/1042`
 
-## Ownership
+## Layout
 
-| Person | Paths |
+| Area | Paths |
 |---|---|
-| A | `src/services/agent/`, `src/llm/` |
-| B | `src/repositories/`, `src/services/tools/`, `data/` |
-| C | `src/services/rag/`, `data/policies/` |
-| D | `src/services/voice/` (+ frontend) |
+| Agent | `src/services/agent/`, `src/llm/` |
+| Ops tools | `src/repositories/`, `src/services/tools/`, `data/` |
+| Policy RAG | `src/services/rag/`, `data/policies/` |
+| Voice | `src/services/voice/` (+ frontend) |
 
 Deploy this app separately from the Next.js frontend (Railway/Render/Fly).

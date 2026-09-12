@@ -9,7 +9,7 @@ import { searchPolicy } from "../rag/searchPolicy.js";
 
 type ToolArgs = Record<string, unknown>;
 
-/** Person B (+ C for search_policy) — validated tool gateway. No raw SQL for the LLM. */
+/** Validated tool gateway. No raw SQL for the LLM. */
 export async function executeTool(name: string, args: ToolArgs) {
   switch (name) {
     case "get_order":

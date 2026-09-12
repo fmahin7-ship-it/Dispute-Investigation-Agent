@@ -1,13 +1,10 @@
 import type {
   ChatCompletionMessageParam,
-  ChatCompletionMessageToolCall,
   ChatCompletionTool,
 } from "openai/resources/chat/completions.js";
 import type { Finding } from "../../schemas/finding.js";
-import { FindingSchema } from "../../schemas/finding.js";
 import type { CaseSummary } from "../../schemas/cases.js";
 import { getChatModel, getLlmClient } from "../../llm/client.js";
-import { executeTool } from "../tools/index.js";
 import { AppError } from "../../middleware/errorHandler.js";
 import { TOOL_DEFINITIONS } from "./toolDefinitions.js";
 import {
@@ -15,171 +12,72 @@ import {
   INVESTIGATOR_SYSTEM_PROMPT,
 } from "./prompts.js";
 import {
-  formatProgressLog,
+  emitProgress,
   type InvestigationProgressHandler,
 } from "./progress.js";
+import {
+  buildInitialUserMessage,
+  toAgentCaseContext,
+} from "./caseContext.js";
+import { parseFinding } from "./findingParse.js";
+import { runToolCalls } from "./toolRunner.js";
 
 /** Architecture: bounded native tool loop — max 3 LLM rounds (no LangGraph). */
 const MAX_LLM_ROUNDS = 3;
 
-function emit(
-  onProgress: InvestigationProgressHandler | undefined,
-  event: Parameters<InvestigationProgressHandler>[0]
-) {
-  console.log(formatProgressLog(event));
-  onProgress?.(event);
+function buildFinalizeUserContent(lastParseError: string | null): string {
+  if (!lastParseError) return FINALIZE_USER_PROMPT;
+  return `${FINALIZE_USER_PROMPT}\n\nPrevious JSON failed validation: ${lastParseError}\nReturn corrected Finding JSON only.`;
 }
 
-type AgentCaseContext = {
-  case_id: string;
-  title: string;
-  customer_message: string;
-  claim_type: string;
-  amount_aud: number;
-  order_id: string;
-  customer_id: string;
-};
-
-/**
- * Strip answer-key fields before the model sees the case.
- * expected_recommendation / expected_action are eval labels only — never LLM input.
- */
-function toAgentCaseContext(caseRow: CaseSummary): AgentCaseContext {
+function emptyToolNudgeMessage(): ChatCompletionMessageParam {
   return {
-    case_id: caseRow.id,
-    title: caseRow.title,
-    customer_message: caseRow.customer_message,
-    claim_type: caseRow.claim_type,
-    amount_aud: caseRow.amount_aud,
-    order_id: caseRow.order_id,
-    customer_id: caseRow.customer_id,
+    role: "user",
+    content:
+      "No tool calls received. Either call needed tools now, or prepare to finalize the Finding from evidence you already have.",
   };
 }
 
-function buildInitialUserMessage(ctx: AgentCaseContext): string {
-  return [
-    "Investigate this NovaCart dispute and produce a Finding.",
-    "",
-    "Case context (ops keys for tools):",
-    JSON.stringify(ctx, null, 2),
-    "",
-    "Suggested first-round tools (call in parallel as needed):",
-    `- get_order with order_id "${ctx.order_id}"`,
-    `- claim-relevant ops tools for claim_type "${ctx.claim_type}"`,
-    `- get_customer_history with customer_id "${ctx.customer_id}" when INR / high-value / risk`,
-    `- search_policy with a specific query for this claim`,
-  ].join("\n");
+function invalidFindingNudgeMessage(error: string): ChatCompletionMessageParam {
+  return {
+    role: "user",
+    content: `Finding JSON was invalid (${error}). Gather any missing tools if needed, then return valid Finding JSON.`,
+  };
 }
 
-function extractJsonObject(text: string): unknown {
-  const trimmed = text.trim();
-  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced?.[1]?.trim() ?? trimmed;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error("Model response did not contain a JSON object");
-  }
-  return JSON.parse(candidate.slice(start, end + 1)) as unknown;
-}
+async function requestModelTurn(options: {
+  messages: ChatCompletionMessageParam[];
+  isFinalRound: boolean;
+  isFirstRound: boolean;
+  tools: ChatCompletionTool[];
+}) {
+  const client = getLlmClient();
+  const model = getChatModel();
+  const { messages, isFinalRound, isFirstRound, tools } = options;
 
-function parseFinding(
-  rawText: string,
-  caseRow: CaseSummary,
-  toolsUsed: string[]
-): Finding {
-  const raw = extractJsonObject(rawText);
-  if (!raw || typeof raw !== "object") {
-    throw new Error("Finding payload is not an object");
-  }
-
-  const body = raw as Record<string, unknown>;
-
-  return FindingSchema.parse({
-    ...body,
-    // Anchor identity to the loaded case — never invent a different case.
-    case_id: caseRow.id,
-    claim_type: caseRow.claim_type,
-    tools_used:
-      toolsUsed.length > 0
-        ? toolsUsed
-        : Array.isArray(body.tools_used)
-          ? body.tools_used
-          : [],
+  return client.chat.completions.create({
+    model,
+    messages,
+    temperature: 0.1,
+    ...(isFinalRound
+      ? { response_format: { type: "json_object" as const } }
+      : {
+          tools,
+          // Round 1 must gather ops/policy facts — never skip straight to a Finding.
+          tool_choice: isFirstRound ? ("required" as const) : ("auto" as const),
+        }),
   });
 }
 
-async function runToolCalls(
-  toolCalls: ChatCompletionMessageToolCall[],
-  toolsUsed: Set<string>,
-  caseId: string,
-  round: number,
-  onProgress?: InvestigationProgressHandler
-): Promise<ChatCompletionMessageParam[]> {
-  return Promise.all(
-    toolCalls.map(async (call) => {
-      const name = call.function.name;
-      toolsUsed.add(name);
-
-      let args: Record<string, unknown> = {};
-      try {
-        args = JSON.parse(call.function.arguments || "{}") as Record<
-          string,
-          unknown
-        >;
-      } catch {
-        args = {};
-      }
-
-      emit(onProgress, {
-        type: "tool_start",
-        case_id: caseId,
-        round,
-        tool: name,
-        args,
-      });
-
-      let payload: unknown;
-      let ok = true;
-      let errorMsg: string | undefined;
-      try {
-        payload = await executeTool(name, args);
-      } catch (err) {
-        ok = false;
-        errorMsg = err instanceof Error ? err.message : String(err);
-        payload = { error: true, tool: name, message: errorMsg };
-      }
-
-      emit(onProgress, {
-        type: "tool_done",
-        case_id: caseId,
-        round,
-        tool: name,
-        ok,
-        error: errorMsg,
-      });
-
-      const toolMessage: ChatCompletionMessageParam = {
-        role: "tool",
-        tool_call_id: call.id,
-        content: JSON.stringify(payload),
-      };
-      return toolMessage;
-    })
-  );
-}
-
 /**
- * Person A — bounded native tool-calling investigation loop.
- * Validate every Finding with FindingSchema before return.
+ * Bounded native tool-calling investigation loop.
+ * Orchestrates rounds only; parsing / tools / prompts live in sibling modules.
  */
 export async function runInvestigationAgent(
   caseRow: CaseSummary,
   onProgress?: InvestigationProgressHandler
 ): Promise<Finding> {
   const ctx = toAgentCaseContext(caseRow);
-  const client = getLlmClient();
-  const model = getChatModel();
   const tools = TOOL_DEFINITIONS as ChatCompletionTool[];
   const toolsUsed = new Set<string>();
 
@@ -194,7 +92,7 @@ export async function runInvestigationAgent(
     const isFinalRound = round === MAX_LLM_ROUNDS;
     const isFirstRound = round === 1;
 
-    emit(onProgress, {
+    emitProgress(onProgress, {
       type: "round_start",
       case_id: caseRow.id,
       round,
@@ -205,29 +103,18 @@ export async function runInvestigationAgent(
     if (isFinalRound) {
       messages.push({
         role: "user",
-        content: lastParseError
-          ? `${FINALIZE_USER_PROMPT}\n\nPrevious JSON failed validation: ${lastParseError}\nReturn corrected Finding JSON only.`
-          : FINALIZE_USER_PROMPT,
+        content: buildFinalizeUserContent(lastParseError),
       });
     }
 
-    const completion = await client.chat.completions.create({
-      model,
+    const completion = await requestModelTurn({
       messages,
-      temperature: 0.1,
-      ...(isFinalRound
-        ? { response_format: { type: "json_object" as const } }
-        : {
-            tools,
-            // Round 1 must gather ops/policy facts — never skip straight to a Finding.
-            tool_choice: isFirstRound
-              ? ("required" as const)
-              : ("auto" as const),
-          }),
+      isFinalRound,
+      isFirstRound,
+      tools,
     });
 
-    const choice = completion.choices[0];
-    const message = choice?.message;
+    const message = completion.choices[0]?.message;
     if (!message) {
       throw new AppError(
         502,
@@ -260,17 +147,13 @@ export async function runInvestigationAgent(
           "AGENT_NO_FINDING"
         );
       }
-      messages.push({
-        role: "user",
-        content:
-          "No tool calls received. Either call needed tools now, or prepare to finalize the Finding from evidence you already have.",
-      });
+      messages.push(emptyToolNudgeMessage());
       continue;
     }
 
     try {
       const finding = parseFinding(content, caseRow, [...toolsUsed]);
-      emit(onProgress, {
+      emitProgress(onProgress, {
         type: "finding_ready",
         case_id: caseRow.id,
         recommendation: finding.recommendation,
@@ -286,10 +169,7 @@ export async function runInvestigationAgent(
           "AGENT_INVALID_FINDING"
         );
       }
-      messages.push({
-        role: "user",
-        content: `Finding JSON was invalid (${lastParseError}). Gather any missing tools if needed, then return valid Finding JSON.`,
-      });
+      messages.push(invalidFindingNudgeMessage(lastParseError));
     }
   }
 

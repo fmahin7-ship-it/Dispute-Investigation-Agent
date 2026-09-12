@@ -13,7 +13,15 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 async function parseJson<T>(res: Response, schema: z.ZodType<T>): Promise<T> {
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(body || `API ${res.status}`);
+    try {
+      const json = JSON.parse(body) as { error?: string };
+      throw new Error(json.error || body || `API ${res.status}`);
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        throw new Error(body || `API ${res.status}`);
+      }
+      throw e;
+    }
   }
   const json: unknown = await res.json();
   return schema.parse(json);
@@ -173,6 +181,24 @@ export async function decide(
   );
   if (!res.ok) throw new Error("Decision failed");
   return res.json();
+}
+
+export const BriefingResponseSchema = z.object({
+  investigation_id: z.string(),
+  stub: z.boolean(),
+  audio_url: z.string().nullable(),
+  mime_type: z.string().optional(),
+  message: z.string(),
+  script: z.string(),
+});
+export type BriefingResponse = z.infer<typeof BriefingResponseSchema>;
+
+export async function briefInvestigation(investigationId: string) {
+  const res = await fetch(
+    `${API_URL}/api/investigations/${investigationId}/brief`,
+    { method: "POST" }
+  );
+  return parseJson(res, BriefingResponseSchema);
 }
 
 export async function fetchPolicies() {

@@ -3,15 +3,19 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
+  briefInvestigation,
   decide,
   fetchCase,
   investigateWithProgress,
+  type BriefingResponse,
   type InvestigateProgressEvent,
 } from "@/lib/api";
-import type { CaseSummary } from "@/schemas/cases";
+import type { CaseDetail, CaseSummary } from "@/schemas/cases";
 import type { Finding } from "@/schemas/finding";
 import { EvidencePanel } from "@/components/EvidencePanel";
 import { FindingPanel } from "@/components/FindingPanel";
+import { DeliveryOpsPanel } from "@/components/DeliveryOpsPanel";
+import { BriefMePanel } from "@/components/BriefMePanel";
 import { HitlActions } from "@/components/HitlActions";
 import { AuditTimeline } from "@/components/AuditTimeline";
 import {
@@ -31,13 +35,16 @@ function sleep(ms: number) {
 }
 
 export function CaseDesk({ caseId }: Props) {
-  const [caseRow, setCaseRow] = useState<CaseSummary | null>(null);
+  const [caseRow, setCaseRow] = useState<CaseDetail | CaseSummary | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [investigationId, setInvestigationId] = useState<string | null>(null);
   const [finding, setFinding] = useState<Finding | null>(null);
   const [audit, setAudit] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [briefBusy, setBriefBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [briefError, setBriefError] = useState<string | null>(null);
+  const [briefing, setBriefing] = useState<BriefingResponse | null>(null);
   const [humanDecision, setHumanDecision] = useState<string | null>(null);
   const [progress, setProgress] = useState<ProgressState>(initialProgressState);
 
@@ -97,6 +104,8 @@ export function CaseDesk({ caseId }: Props) {
   async function onInvestigate() {
     setBusy(true);
     setError(null);
+    setBriefError(null);
+    setBriefing(null);
     setHumanDecision(null);
     setFinding(null);
     setInvestigationId(null);
@@ -147,6 +156,26 @@ export function CaseDesk({ caseId }: Props) {
       ]);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function onBrief() {
+    if (!investigationId) return;
+    setBriefBusy(true);
+    setBriefError(null);
+    try {
+      const result = await briefInvestigation(investigationId);
+      setBriefing(result);
+      setAudit((a) => [
+        ...a,
+        `${new Date().toLocaleTimeString()} Voice brief ${
+          result.stub ? "(script only)" : "ready"
+        }`,
+      ]);
+    } catch (e) {
+      setBriefError(e instanceof Error ? e.message : "Brief failed");
+    } finally {
+      setBriefBusy(false);
     }
   }
 
@@ -226,7 +255,35 @@ export function CaseDesk({ caseId }: Props) {
         <FindingPanel finding={finding} />
       </div>
 
-      <HitlActions disabled={!finding || busy} onDecide={onDecide} />
+      {finding && "ops" in caseRow && caseRow.ops ? (
+        <DeliveryOpsPanel
+          tracking={caseRow.ops.tracking}
+          delivery={caseRow.ops.delivery_evidence}
+        />
+      ) : null}
+
+      {finding && investigationId ? (
+        <>
+          <BriefMePanel
+            disabled={!investigationId || !finding}
+            busy={briefBusy}
+            briefing={
+              briefing
+                ? {
+                    script: briefing.script,
+                    audio_url: briefing.audio_url,
+                    stub: briefing.stub,
+                    message: briefing.message,
+                  }
+                : null
+            }
+            error={briefError}
+            onBrief={onBrief}
+          />
+
+          <HitlActions disabled={!finding || busy} onDecide={onDecide} />
+        </>
+      ) : null}
 
       <AuditTimeline lines={audit} />
 

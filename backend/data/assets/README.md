@@ -1,2 +1,4 @@
-# Place delivery demo images here (e.g. delivery-1042.jpg)
-# Person B wires paths into get_delivery_evidence
+# Demo delivery photos for INR cases (paths match seed `photo_url`).
+
+Served by the Next app from `frontend/public/demo-assets/`.
+Copies also live under `backend/data/assets/` for reference.

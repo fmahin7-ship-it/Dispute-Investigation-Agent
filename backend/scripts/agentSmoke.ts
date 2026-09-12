@@ -1,5 +1,5 @@
 /**
- * Person A smoke — run the real agent on demo cases 1042 / 1087 / 1112.
+ * Smoke: run the real agent on demo cases 1042 / 1087 / 1112.
  *
  *   cd backend && npm run agent:smoke
  *

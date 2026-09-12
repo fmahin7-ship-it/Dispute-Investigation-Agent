@@ -3,7 +3,7 @@ import { env } from "../config/env.js";
 
 let pool: pg.Pool | null = null;
 
-/** Shared Postgres pool — Person B ops source of truth. */
+/** Shared Postgres pool — ops source of truth. */
 export function getPool(): pg.Pool {
   if (!pool) {
     pool = new pg.Pool({

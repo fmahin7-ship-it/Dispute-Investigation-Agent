@@ -1,8 +1,8 @@
-# RAG_HANDOFF — Person C → Person A / D
+# RAG_HANDOFF — Policy retrieval
 
 Policy markdown is the **knowledge** source. Ops rows stay in relational tables; only `backend/data/policies/*.md` is embedded into `policy_chunks`.
 
-`search_policy` is wired through Person B’s `executeTool` gateway — Person A should call the tool name `search_policy` (do not reimplement retrieval).
+`search_policy` is wired through the shared `executeTool` gateway — call the tool name `search_policy` (do not reimplement retrieval).
 
 ## Setup
 
@@ -70,10 +70,9 @@ Default top-k = **5**. Empty index → `{ query, chunks: [] }` (no invented cita
 
 After `npm run rag:smoke`, confirm `policy_chunks` count > 0 and the high-value query returns High-Value / Delivery-related `doc` values.
 
-## Ownership notes
+## Notes
 
-- **Owns:** `backend/src/services/rag/**`, `backend/scripts/ragIndex.ts`, `backend/scripts/ragSmoke.ts`, this file
-- **Does not own:** agent loop, tool SQL, frontend, ElevenLabs
-- **Person A:** call `search_policy` only; do not embed policies again inside the agent
-- **Person D:** policies UI can list the four filenames under `data/policies/`
+- RAG code: `backend/src/services/rag/**`, `backend/scripts/ragIndex.ts`, `backend/scripts/ragSmoke.ts`
+- Agent should call `search_policy` only; do not embed policies again inside the agent loop
+- Policies UI can list the four filenames under `data/policies/`
 - Re-run `npm run rag:index` after policy markdown edits (replaces chunks for those docs)

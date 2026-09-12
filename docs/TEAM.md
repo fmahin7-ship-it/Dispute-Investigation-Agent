@@ -1,14 +1,12 @@
-# Team ownership (4 members)
+# Modules
 
-Separate repos/folders for hosting — assign by folder:
+| Area | Paths |
+|---|---|
+| Agent | `backend/src/services/agent/`, `backend/src/llm/` |
+| Ops data & tools | `backend/src/db/`, `repositories/`, `services/tools/` |
+| Policy RAG | `backend/src/services/rag/`, `data/policies/` |
+| Desk + voice | `frontend/` + `backend/src/services/voice/` |
 
-| Role | Owns | Host |
-|---|---|---|
-| **A — Engine** | `backend/src/services/agent/`, `llm/` | with backend |
-| **B — Data & tools** ([@metal-faced](https://github.com/metal-faced) — Aarav Giri) | `backend/src/db/`, `repositories/`, `services/tools/` | with backend |
-| **C — RAG** | `backend/src/services/rag/`, `data/policies/` | with backend |
-| **D — Desk + voice + ship** | `frontend/` + `backend/src/services/voice/` + deploy both | Vercel + API host |
-
-**Schema sync:** A/B own `backend/src/schemas/finding.ts`; D mirrors to `frontend/src/schemas/finding.ts`.
+Finding schema: `backend/src/schemas/finding.ts` (mirrored in `frontend/src/schemas/finding.ts`).
 
 **Pitch:** We don’t automate refunds. We automate the investigation before the refund.

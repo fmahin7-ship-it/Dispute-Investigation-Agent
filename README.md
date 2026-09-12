@@ -13,7 +13,7 @@
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — diagrams + layers
 - [docs/RUBRIC.md](docs/RUBRIC.md) — judging criteria
-- [docs/TEAM.md](docs/TEAM.md) — 4-person ownership
+- [docs/TEAM.md](docs/TEAM.md) — module map
 
 ## Backend layout (functional)
 

@@ -1,7 +1,7 @@
-# AGENT_HANDOFF — Person A → Person D
+# AGENT_HANDOFF — Investigation agent
 
 Bounded native tool-calling investigator is live. No LangGraph. Max **3** LLM rounds.
-Ops tools + `search_policy` go through Person B’s `executeTool` gateway only.
+Ops tools + `search_policy` go through the shared `executeTool` gateway only.
 
 ## Setup
 
@@ -42,21 +42,16 @@ Each Finding must have:
 - `investigation_confidence.label` + `why[]`
 - Zod-valid via `FindingSchema`
 
-## What Person A owns
+## Module notes
 
-- `backend/src/services/agent/**`
-- `backend/src/llm/**`
-- `backend/src/services/investigationService.ts` (thin wiring)
-- `backend/eval/**`
-- this file
+- Agent loop: `backend/src/services/agent/**`, `backend/src/llm/**`
+- Investigation wiring: `backend/src/services/investigationService.ts`
+- Eval fixtures: `backend/eval/**`
+- Tools / SQL: call `executeTool` only (do not reimplement repositories)
+- RAG: call `search_policy` only — run `npm run rag:index` before demo
+- Frontend / ElevenLabs: desk + voice brief
 
-## What Person A does **not** own
-
-- Tool SQL / repositories (call `executeTool` only)
-- RAG index pipeline (call `search_policy` only — run `npm run rag:index` before demo)
-- Frontend / ElevenLabs
-
-## Important for Person D
+## Desk / HITL notes
 
 - `recommendation` is the AI stance — HITL buttons are the human decision.
 - Case rows still include `expected_recommendation` / `expected_action` for eval; the agent **does not** receive those fields.
@@ -125,7 +120,7 @@ Illustrative shape grounded in seed tool facts + high-value policy (live model w
 }
 ```
 
-## Desk wiring checklist for Person D
+## Desk wiring checklist
 
 1. Investigate → show `evidence`, `contradictions`, `policy_citations`, Finding panel  
 2. HITL → `POST .../decision` (do not treat AI recommendation as final money move)  

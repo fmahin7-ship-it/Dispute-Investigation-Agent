@@ -9,9 +9,8 @@ export type InvestigationRecord = {
 };
 
 /**
- * In-memory investigation store — left for Persons A/D.
- * Ops reads (cases/orders/tools) use Postgres; migrating investigations
- * to the `investigations` table is out of Person B scope.
+ * In-memory investigation store for the demo API.
+ * Ops reads (cases/orders/tools) use Postgres; findings are held here for the desk session.
  */
 const store = new Map<string, InvestigationRecord>();
 

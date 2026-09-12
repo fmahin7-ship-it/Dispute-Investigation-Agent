@@ -24,7 +24,7 @@ type PolicyRow = {
 };
 
 /**
- * Person C — Policy RAG retrieval.
+ * Policy RAG retrieval.
  * Embed query → top-k cosine similarity over policy_chunks only (no ops rows).
  */
 export async function searchPolicy(

@@ -47,3 +47,12 @@ export function formatProgressLog(event: InvestigationProgressEvent): string {
       return `[agent] case=${event.case_id} finding=${event.recommendation} tools=[${event.tools_used.join(", ")}]`;
   }
 }
+
+/** Console + optional SSE/UI callback. */
+export function emitProgress(
+  onProgress: InvestigationProgressHandler | undefined,
+  event: InvestigationProgressEvent
+) {
+  console.log(formatProgressLog(event));
+  onProgress?.(event);
+}

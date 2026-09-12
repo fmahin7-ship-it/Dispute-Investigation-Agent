@@ -1,5 +1,5 @@
 /**
- * Person C — embed policies into policy_chunks.
+ * Embed policies into policy_chunks.
  *
  *   cd backend && npm run rag:index
  *

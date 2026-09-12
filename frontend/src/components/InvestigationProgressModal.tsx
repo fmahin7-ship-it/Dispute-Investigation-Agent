@@ -73,14 +73,20 @@ function setPhaseStatus(
   });
 }
 
-function toolLabel(tool: string, args?: Record<string, unknown>): string {
-  const keys = args
-    ? Object.entries(args)
-        .slice(0, 2)
-        .map(([k, v]) => `${k}=${String(v)}`)
-        .join(", ")
-    : "";
-  return keys ? `${tool} (${keys})` : tool;
+function toolCallLabel(
+  tool: string,
+  args?: Record<string, unknown>
+): string {
+  if (!args || Object.keys(args).length === 0) return tool;
+  const keys = Object.entries(args)
+    .slice(0, 3)
+    .map(([k, v]) => {
+      const raw = typeof v === "string" ? v : JSON.stringify(v);
+      const clipped = raw.length > 48 ? `${raw.slice(0, 48)}…` : raw;
+      return `${k}=${clipped}`;
+    })
+    .join(", ");
+  return `${tool}(${keys})`;
 }
 
 export function reduceProgress(
@@ -162,7 +168,7 @@ export function reduceProgress(
           ),
           {
             id,
-            label: toolLabel(event.tool ?? "tool", event.args),
+            label: toolCallLabel(event.tool ?? "tool", event.args),
             tool: event.tool,
             status: "active",
             detail: "In progress",
@@ -372,10 +378,14 @@ export function InvestigationProgressModal({ state, onClose }: Props) {
                       <p
                         className={
                           item.status === "active"
-                            ? "font-medium text-ink"
+                            ? "font-mono text-[13px] font-medium text-ink"
                             : item.status === "error"
-                              ? "text-red-700"
-                              : "text-slate-700"
+                              ? "font-mono text-[13px] text-red-700"
+                              : item.label.includes("(") ||
+                                  item.label.startsWith("get_") ||
+                                  item.label.startsWith("search_")
+                                ? "font-mono text-[13px] text-slate-700"
+                                : "text-slate-700"
                         }
                       >
                         {item.label}

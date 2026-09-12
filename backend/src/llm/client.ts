@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { env } from "../config/env.js";
 import { AppError } from "../middleware/errorHandler.js";
 
-/** Person A — OpenAI-compatible client (native tool calling; no LangGraph). */
+/** OpenAI-compatible client (native tool calling; no LangGraph). */
 let client: OpenAI | null = null;
 
 export function getLlmClient() {

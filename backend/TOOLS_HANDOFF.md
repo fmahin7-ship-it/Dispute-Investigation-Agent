@@ -1,7 +1,7 @@
-# TOOLS_HANDOFF — Person B → Person A / C
+# TOOLS_HANDOFF â€” Ops tools
 
 Postgres is the **ops source of truth**. Tools return **slim JSON facts** (no raw SQL for the LLM).  
-`search_policy` stays Person C (still stub until C hands off).
+`search_policy` is implemented in the RAG module and registered on the same `executeTool` gateway.
 
 ## Setup
 
@@ -15,7 +15,7 @@ npm run db:seed
 npm run tools:smoke    # prints payloads for 1042 / 1087 / 1112
 ```
 
-## Case → tool args (from `disputes`)
+## Case â†’ tool args (from `disputes`)
 
 | case_number | order_id | customer_id | expected_recommendation |
 |---|---|---|---|
@@ -35,13 +35,13 @@ npm run tools:smoke    # prints payloads for 1042 / 1087 / 1112
 | `get_customer_history` | `{ customer_id }` | `getCustomerHistory` |
 | `get_payments` | `{ order_id }` | `getPayments` |
 | `get_warehouse_pick` | `{ order_id }` | `getWarehousePick` |
-| `search_policy` | `{ query }` | Person C |
+| `search_policy` | `{ query }` | `searchPolicy` (RAG) |
 
 ---
 
 ## Example payloads (seed data)
 
-### Case 1042 — HOLD story
+### Case 1042 â€” HOLD story
 
 **`get_order("ORD-1042")`**
 
@@ -97,7 +97,7 @@ npm run tools:smoke    # prints payloads for 1042 / 1087 / 1112
 }
 ```
 
-**`get_customer_history("C-22")`** — multiple prior disputes (serial-risk)
+**`get_customer_history("C-22")`** â€” multiple prior disputes (serial-risk)
 
 ```json
 {
@@ -145,9 +145,9 @@ npm run tools:smoke    # prints payloads for 1042 / 1087 / 1112
 
 ---
 
-### Case 1087 — duplicate charge
+### Case 1087 â€” duplicate charge
 
-**`get_payments("ORD-1087")`** — two succeeded captures ~3s apart
+**`get_payments("ORD-1087")`** â€” two succeeded captures ~3s apart
 
 ```json
 {
@@ -179,9 +179,9 @@ npm run tools:smoke    # prints payloads for 1042 / 1087 / 1112
 
 ---
 
-### Case 1112 — wrong item / REQUEST_INFO
+### Case 1112 â€” wrong item / REQUEST_INFO
 
-**`get_warehouse_pick("ORD-1112")`** — pick matches Air (supports claim vs warehouse tension)
+**`get_warehouse_pick("ORD-1112")`** â€” pick matches Air (supports claim vs warehouse tension)
 
 ```json
 {
@@ -197,13 +197,15 @@ npm run tools:smoke    # prints payloads for 1042 / 1087 / 1112
 }
 ```
 
-Customer claim (from case): ordered Air but believes they received a Pro → agent should REQUEST_INFO / photo of item (Person A).
+
+Customer claim (from case): ordered Air but believes they received a Pro -> agent should REQUEST_INFO / photo of item.
 
 ---
 
-## Ownership notes
+## Notes
 
-- **Repos:** `backend/src/db/`, `repositories/` (ops), `services/tools/` (except `search_policy`)
-- **Investigations** stay in-memory (`investigationRepository`) for A/D — do not block on migrating to `investigations` table
+- Ops code: `backend/src/db/`, `repositories/`, `services/tools/` (except `search_policy` in RAG)
+- Investigations stay in-memory (`investigationRepository`) for the demo desk — migrating to the `investigations` table is optional
 - **Do not invent evidence** — if `found: false`, treat as missing data
-- Timestamps below are exact ISO strings from `npm run tools:smoke` against the Docker seed
+- Example timestamps above come from `npm run tools:smoke` against the Docker seed
+

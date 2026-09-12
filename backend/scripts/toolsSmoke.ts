@@ -1,5 +1,5 @@
 /**
- * Person B smoke — print slim tool payloads for demo cases 1042 / 1087 / 1112.
+ * Smoke: print slim tool payloads for demo cases 1042 / 1087 / 1112.
  *
  *   cd backend && npm run tools:smoke
  */

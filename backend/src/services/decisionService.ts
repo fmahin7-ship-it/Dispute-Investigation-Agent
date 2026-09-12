@@ -20,7 +20,7 @@ export async function applyDecision(
     decided_by: decidedBy,
     role_label: "Manager",
     at: new Date().toISOString(),
-    note: "Skeleton — production maps role_label to real RBAC",
+    note: "Human decision recorded for audit; production maps role_label to RBAC",
   };
 
   appendAudit({ type: "human_decision", ...record });

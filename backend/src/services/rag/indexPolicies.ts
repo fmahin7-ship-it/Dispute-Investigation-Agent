@@ -25,7 +25,7 @@ async function listPolicyFiles(): Promise<string[]> {
 }
 
 /**
- * Person C — chunk → embed → upsert into policy_chunks.
+ * Chunk → embed → upsert into policy_chunks.
  * Re-running replaces chunks for each policy doc (idempotent for demo).
  */
 export async function indexAllPolicies(): Promise<IndexPoliciesResult> {
@@ -100,7 +100,7 @@ export async function indexAllPolicies(): Promise<IndexPoliciesResult> {
   };
 }
 
-/** Count indexed policy chunks (Person A/D may call before investigate). */
+/** Count indexed policy chunks. */
 export async function countPolicyChunks(): Promise<number> {
   const result = await query<{ count: string }>(
     "SELECT COUNT(*)::text AS count FROM policy_chunks WHERE embedding IS NOT NULL"

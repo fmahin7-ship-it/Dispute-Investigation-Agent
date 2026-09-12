@@ -1,5 +1,5 @@
 /**
- * Person A — system + tool guidance for the investigator.
+ * System + tool guidance for the investigator agent.
  * Keep reflection checklist here (enough evidence? contradictions? policy?).
  */
 

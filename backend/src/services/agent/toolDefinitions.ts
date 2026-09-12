@@ -1,7 +1,6 @@
 /**
- * Person A — register OpenAI-compatible tool definitions here.
- * Person B implements the handlers in services/tools/*.
- * Person C implements search_policy via the same executeTool gateway.
+ * OpenAI-compatible tool definitions.
+ * Handlers live in services/tools/*; search_policy uses the same executeTool gateway.
  */
 export const TOOL_DEFINITIONS = [
   {

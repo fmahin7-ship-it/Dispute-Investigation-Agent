@@ -149,7 +149,7 @@ CREATE TABLE audit_logs (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Policy chunks for RAG (Person C fills via embed job; table ready now)
+-- Policy chunks for RAG (filled by npm run rag:index)
 CREATE TABLE policy_chunks (
   id           TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   doc_name     TEXT NOT NULL,

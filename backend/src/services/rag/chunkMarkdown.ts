@@ -1,5 +1,5 @@
 /**
- * Person C — heading-aware policy chunking (~400–800 tokens target).
+ * Heading-aware policy chunking (~400–800 tokens target).
  * Ops rows stay out of the vector index; this is for policy markdown only.
  */
 

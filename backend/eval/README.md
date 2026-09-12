@@ -1,4 +1,4 @@
-# Eval fixtures (Person A)
+# Eval fixtures
 
 Documented expected recommendations for demo + seed cases.
 Only **1042 / 1087 / 1112** need full UI polish. Remaining rows are agent eval targets.
@@ -27,7 +27,7 @@ Use when expanding automated eval later — still grounded in existing seed rows
 ## How to run a demo check
 
 ```bash
-# Prerequisites (Persons B + C): docker up, db:seed, rag:index, OPENAI_API_KEY
+# Prerequisites: docker up, db:seed, rag:index, OPENAI_API_KEY
 cd backend
 npm run dev
 curl -s -X POST http://localhost:4000/api/investigations/1042 | jq '.finding.recommendation,.finding.evidence,.finding.policy_citations'
