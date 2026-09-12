@@ -11,7 +11,8 @@
     "db:seed": "tsx scripts/dbSeed.ts",
     "tools:smoke": "tsx scripts/toolsSmoke.ts",
     "rag:index": "tsx scripts/ragIndex.ts",
-    "rag:smoke": "tsx scripts/ragSmoke.ts"
+    "rag:smoke": "tsx scripts/ragSmoke.ts",
+    "agent:smoke": "tsx scripts/agentSmoke.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",

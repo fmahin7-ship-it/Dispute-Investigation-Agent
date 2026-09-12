@@ -34,6 +34,7 @@ export async function runInvestigation(
     investigation_id: record.id,
     case_id: caseId,
     recommendation: finding.recommendation,
+    tools_used: finding.tools_used ?? [],
   });
 
   return record;
