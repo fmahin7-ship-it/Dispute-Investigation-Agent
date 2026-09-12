@@ -6,19 +6,21 @@ import {
   type InvestigationRecord,
 } from "../repositories/investigationRepository.js";
 import { runInvestigationAgent } from "./agent/investigator.js";
+import type { InvestigationProgressHandler } from "./agent/progress.js";
 import { appendAudit } from "./auditService.js";
 
 export type { InvestigationRecord };
 
 export async function runInvestigation(
-  caseId: string
+  caseId: string,
+  onProgress?: InvestigationProgressHandler
 ): Promise<InvestigationRecord> {
   const caseRow = await findCaseById(caseId);
   if (!caseRow) {
     throw new AppError(404, `Case ${caseId} not found`, "CASE_NOT_FOUND");
   }
 
-  const finding = await runInvestigationAgent(caseRow);
+  const finding = await runInvestigationAgent(caseRow, onProgress);
 
   const record: InvestigationRecord = {
     id: `inv_${caseId}_${Date.now()}`,

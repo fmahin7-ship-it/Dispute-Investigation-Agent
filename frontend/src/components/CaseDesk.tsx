@@ -1,46 +1,150 @@
 "use client";
 
-import { useState } from "react";
-import { DEMO_CASES } from "@/schemas/cases";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
+import {
+  decide,
+  fetchCase,
+  investigateWithProgress,
+  type InvestigateProgressEvent,
+} from "@/lib/api";
+import type { CaseSummary } from "@/schemas/cases";
 import type { Finding } from "@/schemas/finding";
-import { brief, decide, investigate } from "@/lib/api";
 import { EvidencePanel } from "@/components/EvidencePanel";
 import { FindingPanel } from "@/components/FindingPanel";
 import { HitlActions } from "@/components/HitlActions";
 import { AuditTimeline } from "@/components/AuditTimeline";
+import {
+  initialProgressState,
+  InvestigationProgressModal,
+  progressEventDelayMs,
+  reduceProgress,
+  type ProgressState,
+} from "@/components/InvestigationProgressModal";
 
 type Props = { caseId: string };
 
-/**
- * Person D — wire Investigate → Finding → HITL → Brief me.
- * Skeleton shows layout; agent/tools still stubs on API.
- */
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export function CaseDesk({ caseId }: Props) {
-  const caseRow = DEMO_CASES.find((c) => c.id === caseId);
+  const [caseRow, setCaseRow] = useState<CaseSummary | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [investigationId, setInvestigationId] = useState<string | null>(null);
   const [finding, setFinding] = useState<Finding | null>(null);
   const [audit, setAudit] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
-  const [briefScript, setBriefScript] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [humanDecision, setHumanDecision] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ProgressState>(initialProgressState);
 
-  if (!caseRow) {
-    return <p className="text-red-600">Unknown case {caseId}</p>;
+  const queueRef = useRef<InvestigateProgressEvent[]>([]);
+  const drainingRef = useRef(false);
+  const queueWaitersRef = useRef<Array<() => void>>([]);
+
+  function notifyQueueIdle() {
+    if (queueRef.current.length > 0 || drainingRef.current) return;
+    const waiters = queueWaitersRef.current.splice(0);
+    waiters.forEach((w) => w());
   }
+
+  function waitForProgressQueue(): Promise<void> {
+    if (queueRef.current.length === 0 && !drainingRef.current) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      queueWaitersRef.current.push(resolve);
+    });
+  }
+
+  async function drainProgressQueue() {
+    if (drainingRef.current) return;
+    drainingRef.current = true;
+    while (queueRef.current.length > 0) {
+      const event = queueRef.current.shift()!;
+      setProgress((prev) => reduceProgress(prev, event));
+      await sleep(progressEventDelayMs(event));
+    }
+    drainingRef.current = false;
+    notifyQueueIdle();
+  }
+
+  function enqueueProgress(event: InvestigateProgressEvent) {
+    queueRef.current.push(event);
+    void drainProgressQueue();
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await fetchCase(caseId);
+        if (!cancelled) setCaseRow(data.case);
+      } catch (e) {
+        if (!cancelled) {
+          setLoadError(e instanceof Error ? e.message : "Failed to load case");
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [caseId]);
 
   async function onInvestigate() {
     setBusy(true);
     setError(null);
+    setHumanDecision(null);
+    setFinding(null);
+    setInvestigationId(null);
+    queueRef.current = [];
+    setProgress({
+      ...initialProgressState(),
+      open: true,
+      phaseLabel: "Starting…",
+      phases: initialProgressState().phases.map((p) =>
+        p.id === "start" ? { ...p, status: "active" } : p
+      ),
+    });
+
     try {
-      const result = await investigate(caseId);
+      const result = await investigateWithProgress(caseId, enqueueProgress);
+      await waitForProgressQueue();
       setInvestigationId(result.id);
       setFinding(result.finding);
+      setProgress((prev) => ({
+        ...prev,
+        open: true,
+        phase: "complete",
+        phaseLabel: `Finding ready → ${result.finding.recommendation}`,
+        recommendation: result.finding.recommendation,
+        phases: prev.phases.map((p) => ({ ...p, status: "done" as const })),
+        checklist: prev.checklist.map((c) =>
+          c.status === "active" ? { ...c, status: "done" as const } : c
+        ),
+      }));
       setAudit((a) => [
         ...a,
         `${new Date().toLocaleTimeString()} Investigation completed → ${result.finding.recommendation}`,
       ]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Investigate failed");
+      await waitForProgressQueue();
+      const message = e instanceof Error ? e.message : "Investigate failed";
+      setError(message);
+      setProgress((prev) => ({
+        ...prev,
+        open: true,
+        phase: "failed",
+        phaseLabel: "Investigation failed",
+        error: message,
+      }));
+      setAudit((a) => [
+        ...a,
+        `${new Date().toLocaleTimeString()} Investigation failed`,
+      ]);
     } finally {
       setBusy(false);
     }
@@ -52,6 +156,7 @@ export function CaseDesk({ caseId }: Props) {
     setError(null);
     try {
       await decide(investigationId, decision);
+      setHumanDecision(decision);
       setAudit((a) => [
         ...a,
         `${new Date().toLocaleTimeString()} Human decision → ${decision} (Manager)`,
@@ -63,31 +168,33 @@ export function CaseDesk({ caseId }: Props) {
     }
   }
 
-  async function onBrief() {
-    if (!investigationId) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await brief(investigationId);
-      setBriefScript(result.script ?? null);
-      setAudit((a) => [
-        ...a,
-        `${new Date().toLocaleTimeString()} Voice brief requested`,
-      ]);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Brief failed");
-    } finally {
-      setBusy(false);
-    }
+  if (loadError) {
+    return (
+      <div className="space-y-3">
+        <p className="text-red-600">{loadError}</p>
+        <Link href="/" className="text-sm font-semibold text-accent">
+          ← Back to cases
+        </Link>
+      </div>
+    );
+  }
+
+  if (!caseRow) {
+    return <p className="text-sm text-slate-500">Loading case…</p>;
   }
 
   return (
     <div className="space-y-6">
+      <Link href="/" className="text-sm font-semibold text-accent">
+        ← Back to cases
+      </Link>
+
       <section className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-wide text-slate-500">
               Case #{caseRow.id}
+              {caseRow.order_id ? ` · ${caseRow.order_id}` : ""}
             </p>
             <h2 className="text-xl font-semibold text-ink">{caseRow.title}</h2>
             <p className="mt-2 text-sm italic text-slate-600">
@@ -96,14 +203,22 @@ export function CaseDesk({ caseId }: Props) {
           </div>
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || progress.open}
             onClick={onInvestigate}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
-            {busy ? "Working…" : "Investigate"}
+            {busy ? "Investigating…" : "Investigate"}
           </button>
         </div>
-        {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+        {error && !progress.open ? (
+          <p className="mt-3 text-sm text-red-600">{error}</p>
+        ) : null}
+        {humanDecision ? (
+          <p className="mt-3 rounded-lg bg-teal-50 px-3 py-2 text-sm text-teal-900">
+            Recorded decision: <strong>{humanDecision}</strong> (AI recommended{" "}
+            {finding?.recommendation ?? "—"})
+          </p>
+        ) : null}
       </section>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -111,20 +226,14 @@ export function CaseDesk({ caseId }: Props) {
         <FindingPanel finding={finding} />
       </div>
 
-      <HitlActions
-        disabled={!finding || busy}
-        onDecide={onDecide}
-        onBrief={onBrief}
-      />
-
-      {briefScript ? (
-        <section className="rounded-xl border border-dashed border-accent/40 bg-white/70 p-4 text-sm text-slate-700">
-          <p className="font-semibold text-accent">Brief script</p>
-          <p className="mt-2">{briefScript}</p>
-        </section>
-      ) : null}
+      <HitlActions disabled={!finding || busy} onDecide={onDecide} />
 
       <AuditTimeline lines={audit} />
+
+      <InvestigationProgressModal
+        state={progress}
+        onClose={() => setProgress((p) => ({ ...p, open: false }))}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createInvestigation,
+  streamInvestigation,
   decideInvestigation,
   briefInvestigation,
   getInvestigation,
@@ -13,6 +14,12 @@ import {
 import { DecideBodySchema } from "../schemas/requests.js";
 
 export const investigationsRouter = Router();
+
+investigationsRouter.post(
+  "/:caseId/stream",
+  validate(CaseIdParamSchema, "params"),
+  streamInvestigation
+);
 
 investigationsRouter.post(
   "/:caseId",

@@ -14,9 +14,21 @@ import {
   FINALIZE_USER_PROMPT,
   INVESTIGATOR_SYSTEM_PROMPT,
 } from "./prompts.js";
+import {
+  formatProgressLog,
+  type InvestigationProgressHandler,
+} from "./progress.js";
 
 /** Architecture: bounded native tool loop — max 3 LLM rounds (no LangGraph). */
 const MAX_LLM_ROUNDS = 3;
+
+function emit(
+  onProgress: InvestigationProgressHandler | undefined,
+  event: Parameters<InvestigationProgressHandler>[0]
+) {
+  console.log(formatProgressLog(event));
+  onProgress?.(event);
+}
 
 type AgentCaseContext = {
   case_id: string;
@@ -99,7 +111,10 @@ function parseFinding(
 
 async function runToolCalls(
   toolCalls: ChatCompletionMessageToolCall[],
-  toolsUsed: Set<string>
+  toolsUsed: Set<string>,
+  caseId: string,
+  round: number,
+  onProgress?: InvestigationProgressHandler
 ): Promise<ChatCompletionMessageParam[]> {
   return Promise.all(
     toolCalls.map(async (call) => {
@@ -116,13 +131,33 @@ async function runToolCalls(
         args = {};
       }
 
+      emit(onProgress, {
+        type: "tool_start",
+        case_id: caseId,
+        round,
+        tool: name,
+        args,
+      });
+
       let payload: unknown;
+      let ok = true;
+      let errorMsg: string | undefined;
       try {
         payload = await executeTool(name, args);
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        payload = { error: true, tool: name, message };
+        ok = false;
+        errorMsg = err instanceof Error ? err.message : String(err);
+        payload = { error: true, tool: name, message: errorMsg };
       }
+
+      emit(onProgress, {
+        type: "tool_done",
+        case_id: caseId,
+        round,
+        tool: name,
+        ok,
+        error: errorMsg,
+      });
 
       const toolMessage: ChatCompletionMessageParam = {
         role: "tool",
@@ -139,7 +174,8 @@ async function runToolCalls(
  * Validate every Finding with FindingSchema before return.
  */
 export async function runInvestigationAgent(
-  caseRow: CaseSummary
+  caseRow: CaseSummary,
+  onProgress?: InvestigationProgressHandler
 ): Promise<Finding> {
   const ctx = toAgentCaseContext(caseRow);
   const client = getLlmClient();
@@ -157,6 +193,14 @@ export async function runInvestigationAgent(
   for (let round = 1; round <= MAX_LLM_ROUNDS; round++) {
     const isFinalRound = round === MAX_LLM_ROUNDS;
     const isFirstRound = round === 1;
+
+    emit(onProgress, {
+      type: "round_start",
+      case_id: caseRow.id,
+      round,
+      max_rounds: MAX_LLM_ROUNDS,
+      mode: isFinalRound ? "finalize" : "tools",
+    });
 
     if (isFinalRound) {
       messages.push({
@@ -196,7 +240,13 @@ export async function runInvestigationAgent(
 
     const toolCalls = message.tool_calls;
     if (!isFinalRound && toolCalls && toolCalls.length > 0) {
-      const toolMessages = await runToolCalls(toolCalls, toolsUsed);
+      const toolMessages = await runToolCalls(
+        toolCalls,
+        toolsUsed,
+        caseRow.id,
+        round,
+        onProgress
+      );
       messages.push(...toolMessages);
       continue;
     }
@@ -219,7 +269,14 @@ export async function runInvestigationAgent(
     }
 
     try {
-      return parseFinding(content, caseRow, [...toolsUsed]);
+      const finding = parseFinding(content, caseRow, [...toolsUsed]);
+      emit(onProgress, {
+        type: "finding_ready",
+        case_id: caseRow.id,
+        recommendation: finding.recommendation,
+        tools_used: finding.tools_used ?? [...toolsUsed],
+      });
+      return finding;
     } catch (err) {
       lastParseError = err instanceof Error ? err.message : String(err);
       if (isFinalRound) {
