@@ -5,7 +5,7 @@ Separate repos/folders for hosting — assign by folder:
 | Role | Owns | Host |
 |---|---|---|
 | **A — Engine** | `backend/src/services/agent/`, `llm/` | with backend |
-| **B — Data & tools** | `backend/src/data/`, `repositories/`, `services/tools/` | with backend |
+| **B — Data & tools** ([@metal-faced](https://github.com/metal-faced) — Aarav Giri) | `backend/src/db/`, `repositories/`, `services/tools/` | with backend |
 | **C — RAG** | `backend/src/services/rag/`, `data/policies/` | with backend |
 | **D — Desk + voice + ship** | `frontend/` + `backend/src/services/voice/` + deploy both | Vercel + API host |
 
