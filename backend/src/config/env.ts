@@ -3,6 +3,10 @@ import { z } from "zod";
 const EnvSchema = z.object({
   PORT: z.coerce.number().default(4000),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  DATABASE_URL: z
+    .string()
+    .min(1)
+    .default("postgresql://edi:edi@localhost:5432/edi"),
   OPENAI_API_KEY: z.string().optional(),
   AI_CHAT_MODEL: z.string().default("gpt-4o-mini"),
   AI_EMBEDDING_MODEL: z.string().default("text-embedding-3-small"),
@@ -21,6 +25,7 @@ if (!parsed.success) {
 export const env = {
   port: parsed.data.PORT,
   nodeEnv: parsed.data.NODE_ENV,
+  databaseUrl: parsed.data.DATABASE_URL,
   openaiApiKey: parsed.data.OPENAI_API_KEY,
   chatModel: parsed.data.AI_CHAT_MODEL,
   embeddingModel: parsed.data.AI_EMBEDDING_MODEL,

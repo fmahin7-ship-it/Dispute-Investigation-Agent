@@ -8,9 +8,13 @@ export type InvestigationRecord = {
   created_at: string;
 };
 
+/**
+ * In-memory investigation store — left for Persons A/D.
+ * Ops reads (cases/orders/tools) use Postgres; migrating investigations
+ * to the `investigations` table is out of Person B scope.
+ */
 const store = new Map<string, InvestigationRecord>();
 
-/** In-memory — Person B replaces with DB */
 export function saveInvestigation(record: InvestigationRecord) {
   store.set(record.id, record);
   return record;
