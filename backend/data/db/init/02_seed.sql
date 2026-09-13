@@ -90,7 +90,7 @@ INSERT INTO disputes (
 
 ('DSP-1201', '1201', 'ORD-1201', 'C-77', 'not_received',
  'Hub never arrived.',
- 'open', 89.00, FALSE, 'APPROVE', 'REFUND_FULL'),
+ 'open', 89.00, FALSE, 'REJECT', 'DENY_REFUND_DELIVERED'),
 
 ('DSP-1202', '1202', 'ORD-1202', 'C-90', 'not_received',
  'iPad was not delivered to my apartment.',
@@ -98,4 +98,4 @@ INSERT INTO disputes (
 
 ('DSP-1203', '1203', 'ORD-1203', 'C-22', 'not_as_described',
  'Keyboard does not match the listing colour.',
- 'open', 149.00, FALSE, 'ESCALATE', 'HUMAN_JUDGEMENT');
+ 'open', 149.00, FALSE, 'REQUEST_INFO', 'REQUEST_PHOTO_OF_ITEM');

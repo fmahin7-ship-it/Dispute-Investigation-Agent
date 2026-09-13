@@ -12,7 +12,8 @@ npm run dev
 `db:seed` applies schema + demo seed to `DATABASE_URL` (skips if already seeded; `--force` to reset).
 
 Health: `GET http://localhost:4000/health`  
-Investigate: `POST http://localhost:4000/api/investigations/1042`
+Investigate: `POST http://localhost:4000/api/investigations/1042`  
+Eval (fixtures vs `expected_recommendation`): `npm run eval` — see `eval/README.md`
 
 ## Layout
 

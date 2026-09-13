@@ -20,6 +20,7 @@ import {
   toAgentCaseContext,
 } from "./caseContext.js";
 import { parseFinding } from "./findingParse.js";
+import { applyFindingGuards } from "./findingGuards.js";
 import { runToolCalls } from "./toolRunner.js";
 
 /** Architecture: bounded native tool loop — max 3 LLM rounds (no LangGraph). */
@@ -152,7 +153,8 @@ export async function runInvestigationAgent(
     }
 
     try {
-      const finding = parseFinding(content, caseRow, [...toolsUsed]);
+      const parsed = parseFinding(content, caseRow, [...toolsUsed]);
+      const finding = await applyFindingGuards(parsed, caseRow);
       emitProgress(onProgress, {
         type: "finding_ready",
         case_id: caseRow.id,

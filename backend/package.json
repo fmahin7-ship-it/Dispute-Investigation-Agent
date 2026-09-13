@@ -12,7 +12,8 @@
     "tools:smoke": "tsx scripts/toolsSmoke.ts",
     "rag:index": "tsx scripts/ragIndex.ts",
     "rag:smoke": "tsx scripts/ragSmoke.ts",
-    "agent:smoke": "tsx scripts/agentSmoke.ts"
+    "agent:smoke": "tsx scripts/agentSmoke.ts",
+    "eval": "tsx scripts/evalAgent.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",

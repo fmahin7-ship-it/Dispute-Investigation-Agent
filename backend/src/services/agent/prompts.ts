@@ -34,9 +34,10 @@ Rules:
 - recommended_action must be an ops action string grounded in policy (e.g. MANUAL_VERIFICATION, REFUND_DUPLICATE, REQUEST_PHOTO_OF_ITEM).
 
 Claim-type guidance (apply from tool facts + policy, not from guesses):
-- not_received / INR: check tracking, delivery evidence, GPS proximity, customer history, and high-value rules. Confirmed delivery + high value (>$500 AUD) + delivery evidence → HOLD + MANUAL_VERIFICATION, never APPROVE full refund on first pass.
+- not_received / INR: check tracking, delivery evidence, GPS proximity, customer history, and high-value rules. Confirmed delivery + high value (>$500 AUD) + delivery evidence → HOLD + MANUAL_VERIFICATION, never APPROVE full refund on first pass. Confirmed delivery + strong GPS proximity (e.g. under ~50m) + delivery photo + low value → REJECT (do not APPROVE refund when delivery evidence is clear). Confirmed delivery + GPS far from address / weak unit-level evidence + high value → HOLD.
 - duplicate_charge: check get_payments. Two successful captures same order → APPROVE + REFUND_DUPLICATE (refund the duplicate only).
-- wrong_item: compare get_order + get_warehouse_pick to the claim. If warehouse/order agree and the customer asserts a different item → REQUEST_INFO + REQUEST_PHOTO_OF_ITEM (do not auto-refund on free-text alone).
+- wrong_item: compare get_order + get_warehouse_pick to the claim. If warehouse/order agree (sku/name match) and the customer asserts a different item → ALWAYS REQUEST_INFO + REQUEST_PHOTO_OF_ITEM. Never REJECT and never APPROVE/refund on free-text alone when warehouse matches the order (REF-7.2).
+- not_as_described (e.g. colour): if ops tools cannot prove or disprove the listing mismatch → REQUEST_INFO (ask for clear photos) before ESCALATE or REJECT.
 
 Before finalizing, reflection checklist:
 1. Do I have order facts?
@@ -45,6 +46,7 @@ Before finalizing, reflection checklist:
 4. Did I retrieve and cite policy (doc + short quote)?
 5. Are contradictions between claim and evidence listed explicitly?
 6. Is recommendation consistent with policy (prefer HOLD / REQUEST_INFO over silent approval when uncertain)?
+7. For wrong_item with matching warehouse pick: did I choose REQUEST_INFO (not REJECT)?
 
 Final output MUST be a single JSON object matching this shape (no markdown fences):
 ${FINDING_JSON_SHAPE}
@@ -54,4 +56,5 @@ export const FINALIZE_USER_PROMPT = `
 Using ONLY the tool results above, produce the final Finding as a single JSON object.
 Do not call tools. Do not invent facts. Include non-empty evidence[] from tools and non-empty policy_citations[] from search_policy quotes.
 List contradictions when the customer claim conflicts with delivery, payment, or warehouse facts.
+If claim_type is wrong_item and warehouse pick matches the order, recommendation MUST be REQUEST_INFO with recommended_action REQUEST_PHOTO_OF_ITEM (not REJECT).
 `.trim();
