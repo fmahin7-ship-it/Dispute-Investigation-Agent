@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { fetchPolicy } from "@/lib/api";
+import { PolicyDocument } from "@/components/PolicyDocument";
 
 export default function PolicyDetailPage() {
   const params = useParams<{ doc: string }>();
@@ -44,18 +45,7 @@ export default function PolicyDetailPage() {
       {loading ? <p className="text-sm text-slate-500">Loading…</p> : null}
       {error ? <p className="text-sm text-rose-700">{error}</p> : null}
       {!loading && !error ? (
-        <article className="desk-panel">
-          <p className="desk-kicker">Policy document</p>
-          <h2 className="mt-2 font-display text-2xl font-semibold text-ink">
-            {title}
-          </h2>
-          <p className="mt-1 font-mono text-xs text-slate-400">{docName}</p>
-          <div className="mt-6 border-t border-line pt-6">
-            <pre className="max-w-none whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-slate-700">
-              {content}
-            </pre>
-          </div>
-        </article>
+        <PolicyDocument title={title} docName={docName} content={content} />
       ) : null}
     </main>
   );
